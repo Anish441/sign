@@ -1,0 +1,14 @@
+{
+  "name": "signature-extractor",
+  "version": "1.0.0",
+  "description": "Extract transparent signatures from photos of paper or cards",
+  "main": "index.html",
+  "scripts": {
+    "start": "python server.py",
+    "deploy": "vercel --prod"
+  },
+  "keywords": ["signature", "extractor", "ocr", "canvas"],
+  "author": "",
+  "license": "MIT"
+}
+
