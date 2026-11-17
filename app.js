@@ -347,26 +347,30 @@
     try {
       const data = ctx.getImageData(0, 0, sw, sh).data;
 
-      // ── Step 1: Estimate background luminance ──
-      // Sample the entire image; paper background is light → 90th percentile
-      const lums = [];
+      // ── Step 1: Estimate background RGB per-channel (handles coloured paper) ──
+      const rS = [], gS = [], bS = [];
       for (let i = 0; i < data.length; i += 8) {
-        lums.push(0.299 * data[i] + 0.587 * data[i+1] + 0.114 * data[i+2]);
+        rS.push(data[i]); gS.push(data[i+1]); bS.push(data[i+2]);
       }
-      lums.sort((a, b) => a - b);
-      const bgLum = lums[Math.floor(lums.length * 0.90)];
+      rS.sort((a,b)=>a-b); gS.sort((a,b)=>a-b); bS.sort((a,b)=>a-b);
+      const pct = Math.floor(rS.length * 0.90);
+      const bgR = rS[pct], bgG = gS[pct], bgB = bS[pct];
 
-      // Ink threshold: pixels significantly darker than background
-      const inkThresh = bgLum * 0.72; // pixel lum < 72% of bg = ink
+      // Ink pixel: colour-distance from background AND darker than background
+      function isInk(r, g, b) {
+        const dr = bgR - r, dg = bgG - g, db = bgB - b;
+        const lumDiff = 0.299*dr + 0.587*dg + 0.114*db; // positive = darker than bg
+        const colorDist = Math.sqrt(dr*dr + dg*dg + db*db);
+        return lumDiff > 15 && colorDist > 30;
+      }
 
-      // ── Step 2: Find bounding box of ALL ink pixels ──
+      // ── Step 2: Ink per row (using colour-distance from background) ──
       let minX = sw, maxX = 0, minY = sh, maxY = 0;
       let hasInk = false;
       for (let y = 0; y < sh; y++) {
         for (let x = 0; x < sw; x++) {
           const i = (y * sw + x) * 4;
-          const lum = 0.299 * data[i] + 0.587 * data[i+1] + 0.114 * data[i+2];
-          if (lum < inkThresh) {
+          if (isInk(data[i], data[i+1], data[i+2])) {
             hasInk = true;
             if (x < minX) minX = x;
             if (x > maxX) maxX = x;
@@ -381,14 +385,11 @@
         state.crop = { x: Math.round(sw*0.1), y: Math.round(sh*0.1), w: Math.round(sw*0.8), h: Math.round(sh*0.8) };
       } else {
         // ── Step 3: Scan horizontal ink density per row
-        // Find the row band with the MOST concentrated ink
-        // (signature typically occupies a narrow horizontal strip)
         const inkPerRow = new Array(sh).fill(0);
         for (let y = 0; y < sh; y++) {
           for (let x = 0; x < sw; x++) {
             const i = (y * sw + x) * 4;
-            const lum = 0.299 * data[i] + 0.587 * data[i+1] + 0.114 * data[i+2];
-            if (lum < inkThresh) inkPerRow[y]++;
+            if (isInk(data[i], data[i+1], data[i+2])) inkPerRow[y]++;
           }
         }
 
@@ -411,13 +412,10 @@
         }
 
         // ── Step 4: Pick the DENSEST band (most ink per row = signature stroke area)
-        // Also weight by being somewhat central/below-centre (signatures are usually there)
+        // Weight bands toward lower-centre of page (signatures typically there)
         let best = null;
-        const midY = sh * 0.5;
         for (const b of bands) {
           const bMid = (b.y0 + b.y1) / 2;
-          // Score = density * (1 - 0.3 * abs(bMid/sh - 0.65))
-          // Prefer bands around 65% down the page
           const posScore = 1 - 0.3 * Math.abs(bMid / sh - 0.65);
           b.score = b.density * posScore;
           if (!best || b.score > best.score) best = b;
@@ -429,8 +427,7 @@
           for (let y = best.y0; y < best.y1; y++) {
             for (let x = 0; x < sw; x++) {
               const i = (y * sw + x) * 4;
-              const lum = 0.299 * data[i] + 0.587 * data[i+1] + 0.114 * data[i+2];
-              if (lum < inkThresh) {
+              if (isInk(data[i], data[i+1], data[i+2])) {
                 if (x < bMinX) bMinX = x;
                 if (x > bMaxX) bMaxX = x;
               }
@@ -577,17 +574,53 @@
 
     const pixels = cropData.data;
 
-    // Background luminance (90th percentile = paper white)
-    const samples = [];
-    const step = Math.max(1, Math.floor((w * h) / 1500));
-    for (let i = 0; i < pixels.length; i += step * 4) {
-      samples.push(0.299 * pixels[i] + 0.587 * pixels[i+1] + 0.114 * pixels[i+2]);
-    }
-    samples.sort((a, b) => a - b);
-    const bgLum = samples[Math.floor(samples.length * 0.90)] || 200;
+    // ── LOCAL ADAPTIVE THRESHOLDING (integral image / summed-area-table) ──
+    // This is the key fix for shadows & coloured paper:
+    // Instead of comparing to a GLOBAL background, each pixel is compared to
+    // the AVERAGE of its local neighbourhood. 
+    //   Shadow = gradual brightness change → local avg also dark → NOT detected as ink
+    //   Ink stroke = sharp local dark spot → much darker than local avg → IS detected
+    //
+    // Uses a summed-area table so local means are O(1) per pixel (very fast).
 
-    const thr = state.threshold;
-    const clean = state.cleanliness;
+    // Build grayscale luminance array
+    const lum = new Float32Array(w * h);
+    for (let i = 0; i < w * h; i++) {
+      lum[i] = 0.299*pixels[i*4] + 0.587*pixels[i*4+1] + 0.114*pixels[i*4+2];
+    }
+
+    // Build integral (summed-area) table: sat[(y+1)*(w+1)+(x+1)] = sum of lum[0..y][0..x]
+    const sat = new Float64Array((w + 1) * (h + 1)); // zero-padded border
+    for (let y = 0; y < h; y++) {
+      for (let x = 0; x < w; x++) {
+        sat[(y+1)*(w+1)+(x+1)] = lum[y*w+x]
+          + sat[y*(w+1)+(x+1)]
+          + sat[(y+1)*(w+1)+x]
+          - sat[y*(w+1)+x];
+      }
+    }
+
+    // Local mean query: average luminance in rectangle [x1..x2, y1..y2]
+    function localMean(px, py, R) {
+      const x1 = Math.max(0, px - R), y1 = Math.max(0, py - R);
+      const x2 = Math.min(w - 1, px + R), y2 = Math.min(h - 1, py + R);
+      const area = (x2 - x1 + 1) * (y2 - y1 + 1);
+      const sum = sat[(y2+1)*(w+1)+(x2+1)]
+                - sat[y1*(w+1)+(x2+1)]
+                - sat[(y2+1)*(w+1)+x1]
+                + sat[y1*(w+1)+x1];
+      return sum / area;
+    }
+
+    // Adaptive window radius: ~6% of the shorter dimension, min 15px, max 60px
+    const R = Math.max(15, Math.min(60, Math.round(Math.min(w, h) * 0.08)));
+
+    // Sensitivity from sliders
+    // threshold (5–80): how much darker than local mean = ink  → map to 5–40% ratio
+    const inkRatio  = 1 - (state.threshold  / 80) * 0.40;  // e.g. 28→ ~0.86
+    // cleanliness (2–60): noise floor in absolute lum units
+    const noiseLum  = state.cleanliness * 0.8;              // e.g. 15→ 12 lum units
+
     const isOrig = state.inkColor === 'original';
     let tr = 11, tg = 15, tb = 25;
     if (!isOrig && state.inkColor.startsWith('#')) {
@@ -602,22 +635,34 @@
     for (let py = 0; py < h; py++) {
       for (let px = 0; px < w; px++) {
         const idx = (py * w + px) * 4;
-        const lum = 0.299*pixels[idx] + 0.587*pixels[idx+1] + 0.114*pixels[idx+2];
-        const diff = bgLum - lum;
+        const r = pixels[idx], g = pixels[idx+1], b = pixels[idx+2];
+        const pixLum = lum[py * w + px];
+
+        // Local neighbourhood mean
+        const localAvg = localMean(px, py, R);
+
+        // Ink condition: pixel is notably darker than its local surroundings
+        // AND the absolute difference exceeds the noise floor
+        const diff = localAvg - pixLum;        // positive = pixel darker than neighbourhood
+        const ratio = pixLum / (localAvg + 1); // ratio < inkRatio = strong ink
+
         let alpha = 0;
-        if (diff > clean) {
-          alpha = Math.round(Math.min(1, Math.max(0, (diff - clean) / thr)) * 255);
+        if (diff > noiseLum && ratio < inkRatio) {
+          // Smooth ramp: scale alpha from noiseFloor to full ink
+          const ramp = Math.min(1, (diff - noiseLum) / (localAvg * 0.25 + 1));
+          alpha = Math.round(ramp * 255);
         }
-        if (alpha > 10) {
+
+        if (alpha > 8) {
           hasInk = true;
           if (px < iMinX) iMinX = px;
           if (px > iMaxX) iMaxX = px;
           if (py < iMinY) iMinY = py;
           if (py > iMaxY) iMaxY = py;
         }
-        out[idx]   = isOrig ? pixels[idx]   : tr;
-        out[idx+1] = isOrig ? pixels[idx+1] : tg;
-        out[idx+2] = isOrig ? pixels[idx+2] : tb;
+        out[idx]   = isOrig ? r : tr;
+        out[idx+1] = isOrig ? g : tg;
+        out[idx+2] = isOrig ? b : tb;
         out[idx+3] = alpha;
       }
     }
