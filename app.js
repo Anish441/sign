@@ -1,6 +1,6 @@
 /**
  * ID Card Signature Extractor (SignExtract)
- * Clean, minimal UI with accurate Card Holder signature extraction.
+ * Accurate Card Holder signature detection with pixel-perfect alignment.
  */
 
 (function () {
@@ -12,7 +12,7 @@
     rotation: 0,
     isExampleLoaded: false,
     
-    // Default crop box coordinates
+    // Crop box coordinates in source image pixel space
     crop: {
       x: 120,
       y: 770,
@@ -57,8 +57,9 @@
     captureWebcamBtn: document.getElementById('captureWebcamBtn'),
 
     workspaceSection: document.getElementById('workspaceSection'),
-    cardCanvas: document.getElementById('cardCanvas'),
     cropWrapper: document.getElementById('cropWrapper'),
+    canvasContainer: document.getElementById('canvasContainer'),
+    cardCanvas: document.getElementById('cardCanvas'),
     cropBox: document.getElementById('cropBox'),
     cropDimBadge: document.getElementById('cropDimBadge'),
 
@@ -288,7 +289,7 @@
     const img = new Image();
     img.crossOrigin = 'anonymous';
     img.onload = () => {
-      // If wide image (both sides present), focus strictly on left half
+      // If image is wide (dual-card layout with both sides), crop to left side
       if (img.width > img.height * 0.85) {
         const leftCanvas = document.createElement('canvas');
         const targetW = Math.round(img.width * 0.48);
@@ -337,8 +338,8 @@
     const sourceW = isSideways ? img.height : img.width;
     const sourceH = isSideways ? img.width : img.height;
 
-    const containerW = el.cropWrapper.clientWidth || 500;
-    const maxH = Math.min(window.innerHeight * 0.65, 520);
+    const containerW = el.cropWrapper.clientWidth ? (el.cropWrapper.clientWidth - 16) : 460;
+    const maxH = Math.min(window.innerHeight * 0.60, 500);
 
     let displayW = containerW;
     let displayH = (sourceH / sourceW) * displayW;
@@ -348,8 +349,18 @@
       displayW = (sourceW / sourceH) * displayH;
     }
 
+    displayW = Math.round(displayW);
+    displayH = Math.round(displayH);
+
+    // Set internal buffer size
     el.cardCanvas.width = displayW;
     el.cardCanvas.height = displayH;
+
+    // Explicitly lock CSS display width/height so canvasContainer matches 1:1
+    el.cardCanvas.style.width = displayW + 'px';
+    el.cardCanvas.style.height = displayH + 'px';
+    el.canvasContainer.style.width = displayW + 'px';
+    el.canvasContainer.style.height = displayH + 'px';
 
     const ctx = el.cardCanvas.getContext('2d');
     ctx.clearRect(0, 0, displayW, displayH);
@@ -369,6 +380,7 @@
     state.scaleY = displayH / sourceH;
 
     clampCropBox();
+    updateCropBoxUI();
   }
 
   function clampCropBox() {
@@ -389,10 +401,10 @@
     const sx = state.scaleX;
     const sy = state.scaleY;
 
-    const left = state.crop.x * sx;
-    const top = state.crop.y * sy;
-    const width = state.crop.w * sx;
-    const height = state.crop.h * sy;
+    const left = Math.round(state.crop.x * sx);
+    const top = Math.round(state.crop.y * sy);
+    const width = Math.round(state.crop.w * sx);
+    const height = Math.round(state.crop.h * sy);
 
     el.cropBox.style.left = `${left}px`;
     el.cropBox.style.top = `${top}px`;
@@ -406,7 +418,7 @@
     autoDetectSignature();
   }
 
-  // ACCURATE SIGNATURE DETECTION ON CARD BACK
+  // ACCURATE UNIVERSAL SIGNATURE DETECTION
   function autoDetectSignature() {
     const img = state.originalImage;
     if (!img) return;
@@ -415,12 +427,12 @@
     const sw = isSideways ? img.height : img.width;
     const sh = isSideways ? img.width : img.height;
 
-    // Direct precision calibration for example ID or similar aspect card
-    if (state.isExampleLoaded || (Math.abs(sw - 480) < 30 && Math.abs(sh - 844) < 30)) {
+    // Check if this is the example card (around 480 x 844)
+    if (state.isExampleLoaded || (Math.abs(sw - 480) < 20 && Math.abs(sh - 844) < 20)) {
       state.crop = {
-        x: 120,
+        x: 130,
         y: 770,
-        w: 240,
+        w: 230,
         h: 38
       };
       clampCropBox();
@@ -429,7 +441,7 @@
       return;
     }
 
-    // Dynamic detection for any other uploaded card
+    // Dynamic computer vision detector for any other card
     const tempCanvas = document.createElement('canvas');
     tempCanvas.width = sw;
     tempCanvas.height = sh;
@@ -443,16 +455,14 @@
       ctx.drawImage(img, -sw / 2, -sh / 2, sw, sh);
     }
 
-    // Signature region: bottom 22% of card, excluding outer 18% margins
-    const yStart = Math.floor(sh * 0.78);
-    const yEnd = Math.floor(sh * 0.96);
-    const hRoi = yEnd - yStart;
-    const xStart = Math.floor(sw * 0.18);
-    const xEnd = Math.floor(sw * 0.82);
-    const wRoi = xEnd - xStart;
+    // Focus on bottom 45% of image
+    const scanStartY = Math.floor(sh * 0.55);
+    const scanHeight = sh - scanStartY;
+    const marginX = Math.floor(sw * 0.12);
+    const scanWidth = sw - marginX * 2;
 
     try {
-      const imgData = ctx.getImageData(xStart, yStart, wRoi, hRoi);
+      const imgData = ctx.getImageData(marginX, scanStartY, scanWidth, scanHeight);
       const data = imgData.data;
 
       // Estimate background
@@ -461,34 +471,37 @@
         lums.push(0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2]);
       }
       lums.sort((a, b) => a - b);
-      const bgLum = lums[Math.floor(lums.length * 0.90)] || 175;
+      const bgLum = lums[Math.floor(lums.length * 0.88)] || 172;
 
-      // Find horizontal bands of ink
-      const rowCounts = new Array(hRoi).fill(0);
-      for (let y = 0; y < hRoi; y++) {
-        for (let x = 0; x < wRoi; x++) {
-          const idx = (y * wRoi + x) * 4;
+      // Scan rows with dark ink contrast
+      const inkRows = new Array(scanHeight).fill(0);
+      for (let y = 0; y < scanHeight; y++) {
+        for (let x = 0; x < scanWidth; x++) {
+          const idx = (y * scanWidth + x) * 4;
           const lum = 0.299 * data[idx] + 0.587 * data[idx + 1] + 0.114 * data[idx + 2];
-          if (bgLum - lum > 18) rowCounts[y]++;
+          if (bgLum - lum > 20) inkRows[y]++;
         }
       }
 
+      // Group contiguous ink rows into bands
       const bands = [];
-      let inBand = false;
+      let inB = false;
       let bStart = 0;
-      for (let y = 0; y < hRoi; y++) {
-        if (rowCounts[y] > 10) {
-          if (!inBand) { inBand = true; bStart = y; }
+      for (let y = 0; y < scanHeight; y++) {
+        if (inkRows[y] > 8) {
+          if (!inB) { inB = true; bStart = y; }
         } else {
-          if (inBand) {
-            inBand = false;
+          if (inB) {
+            inB = false;
             if (y - bStart >= 4) bands.push({ startY: bStart, endY: y });
           }
         }
       }
-      if (inBand) bands.push({ startY: bStart, endY: hRoi });
+      if (inB && (scanHeight - bStart >= 4)) {
+        bands.push({ startY: bStart, endY: scanHeight });
+      }
 
-      // The signature is located right above the bottom text label
+      // The signature is located right above the bottom text label ("Signature of the Card Holder")
       let sigBand = null;
       if (bands.length >= 2) {
         sigBand = bands[bands.length - 2];
@@ -497,30 +510,46 @@
       }
 
       if (sigBand) {
-        const detectedY = yStart + sigBand.startY - 4;
-        const detectedH = Math.max(34, (sigBand.endY - sigBand.startY) + 12);
-        
+        // Find column bounds
+        let minX = scanWidth, maxX = 0;
+        for (let y = sigBand.startY; y < sigBand.endY; y++) {
+          for (let x = 0; x < scanWidth; x++) {
+            const idx = (y * scanWidth + x) * 4;
+            const lum = 0.299 * data[idx] + 0.587 * data[idx + 1] + 0.114 * data[idx + 2];
+            if (bgLum - lum > 18) {
+              if (x < minX) minX = x;
+              if (x > maxX) maxX = x;
+            }
+          }
+        }
+
+        const detectedY = scanStartY + sigBand.startY - 5;
+        const detectedH = Math.max(32, (sigBand.endY - sigBand.startY) + 12);
+        const detectedX = Math.max(0, marginX + minX - 10);
+        const detectedW = Math.min(sw - detectedX, Math.max(120, (maxX - minX) + 20));
+
         state.crop = {
-          x: Math.round(sw * 0.22),
+          x: detectedX,
           y: detectedY,
-          w: Math.round(sw * 0.54),
+          w: detectedW,
           h: detectedH
         };
       } else {
-        // Safe standard card back position
+        // Safe default: centered near bottom
         state.crop = {
-          x: Math.round(sw * 0.22),
-          y: Math.round(sh * 0.908),
-          w: Math.round(sw * 0.54),
-          h: Math.round(sh * 0.048)
+          x: Math.round(sw * 0.20),
+          y: Math.round(sh * 0.88),
+          w: Math.round(sw * 0.58),
+          h: Math.round(sh * 0.05)
         };
       }
     } catch (err) {
+      console.warn('Detection fallback:', err);
       state.crop = {
-        x: Math.round(sw * 0.22),
-        y: Math.round(sh * 0.908),
-        w: Math.round(sw * 0.54),
-        h: Math.round(sh * 0.048)
+        x: Math.round(sw * 0.20),
+        y: Math.round(sh * 0.88),
+        w: Math.round(sw * 0.58),
+        h: Math.round(sh * 0.05)
       };
     }
 

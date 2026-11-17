@@ -136,21 +136,24 @@
             <span id="cropDimBadge" class="text-xs text-slate-400 font-mono">-- × -- px</span>
           </div>
 
-          <div id="cropWrapper" class="crop-container w-full bg-slate-950 flex items-center justify-center relative rounded-xl overflow-hidden min-h-[340px]">
-            <canvas id="cardCanvas" class="max-w-full h-auto block select-none pointer-events-none"></canvas>
-            
-            <!-- Draggable Crop Box -->
-            <div id="cropBox" class="crop-box">
-              <div class="crop-handle tl" data-handle="tl"></div>
-              <div class="crop-handle tr" data-handle="tr"></div>
-              <div class="crop-handle bl" data-handle="bl"></div>
-              <div class="crop-handle br" data-handle="br"></div>
-              <div class="crop-handle t" data-handle="t"></div>
-              <div class="crop-handle b" data-handle="b"></div>
-              <div class="crop-handle l" data-handle="l"></div>
-              <div class="crop-handle r" data-handle="r"></div>
-              <div class="crop-center-indicator">
-                <i data-lucide="move" class="w-3.5 h-3.5 text-white"></i>
+          <div id="cropWrapper" class="crop-container w-full bg-slate-950 flex items-center justify-center p-2 rounded-xl overflow-hidden min-h-[340px]">
+            <!-- Inner Canvas Container (Exactly matches canvas pixel dimensions) -->
+            <div id="canvasContainer" class="relative inline-block select-none">
+              <canvas id="cardCanvas" class="block select-none pointer-events-none"></canvas>
+              
+              <!-- Draggable Crop Box -->
+              <div id="cropBox" class="crop-box">
+                <div class="crop-handle tl" data-handle="tl"></div>
+                <div class="crop-handle tr" data-handle="tr"></div>
+                <div class="crop-handle bl" data-handle="bl"></div>
+                <div class="crop-handle br" data-handle="br"></div>
+                <div class="crop-handle t" data-handle="t"></div>
+                <div class="crop-handle b" data-handle="b"></div>
+                <div class="crop-handle l" data-handle="l"></div>
+                <div class="crop-handle r" data-handle="r"></div>
+                <div class="crop-center-indicator">
+                  <i data-lucide="move" class="w-3.5 h-3.5 text-white"></i>
+                </div>
               </div>
             </div>
           </div>
