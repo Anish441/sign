@@ -1,0 +1,156 @@
+/* Custom styles for ID Card Signature Extractor */
+
+:root {
+  --primary: #4f46e5;
+  --primary-hover: #4338ca;
+  --accent: #10b981;
+}
+
+/* Checkerboard pattern for transparent preview */
+.checker-bg {
+  background-color: #f8fafc;
+  background-image: 
+    linear-gradient(45deg, #e2e8f0 25%, transparent 25%),
+    linear-gradient(-45deg, #e2e8f0 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #e2e8f0 75%),
+    linear-gradient(-45deg, transparent 75%, #e2e8f0 75%);
+  background-size: 16px 16px;
+  background-position: 0 0, 0 8px, 8px -8px, -8px 0px;
+}
+
+.dark .checker-bg {
+  background-color: #0f172a;
+  background-image: 
+    linear-gradient(45deg, #1e293b 25%, transparent 25%),
+    linear-gradient(-45deg, #1e293b 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #1e293b 75%),
+    linear-gradient(-45deg, transparent 75%, #1e293b 75%);
+  background-size: 16px 16px;
+  background-position: 0 0, 0 8px, 8px -8px, -8px 0px;
+}
+
+/* Crop container styling */
+.crop-container {
+  position: relative;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: none;
+  overflow: hidden;
+  border-radius: 0.75rem;
+}
+
+/* Crop selection box */
+.crop-box {
+  position: absolute;
+  box-sizing: border-box;
+  border: 2px solid #3b82f6;
+  box-shadow: 0 0 0 9999px rgba(15, 23, 42, 0.65), 0 0 15px rgba(59, 130, 246, 0.4);
+  cursor: move;
+  touch-action: none;
+  z-index: 20;
+}
+
+/* Crop handles */
+.crop-handle {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  background-color: #ffffff;
+  border: 2.5px solid #2563eb;
+  border-radius: 3px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.25);
+  z-index: 25;
+  transition: transform 0.1s ease, background-color 0.1s ease;
+}
+
+/* Extra touch hit area for mobile */
+.crop-handle::after {
+  content: '';
+  position: absolute;
+  top: -12px;
+  left: -12px;
+  right: -12px;
+  bottom: -12px;
+}
+
+.crop-handle:hover, .crop-handle:active {
+  background-color: #60a5fa;
+  transform: scale(1.2);
+}
+
+.crop-handle.tl { top: -7px; left: -7px; cursor: nwse-resize; }
+.crop-handle.tr { top: -7px; right: -7px; cursor: nesw-resize; }
+.crop-handle.bl { bottom: -7px; left: -7px; cursor: nesw-resize; }
+.crop-handle.br { bottom: -7px; right: -7px; cursor: nwse-resize; }
+
+.crop-handle.t  { top: -7px; left: 50%; transform: translateX(-50%); cursor: ns-resize; }
+.crop-handle.b  { bottom: -7px; left: 50%; transform: translateX(-50%); cursor: ns-resize; }
+.crop-handle.l  { left: -7px; top: 50%; transform: translateY(-50%); cursor: ew-resize; }
+.crop-handle.r  { right: -7px; top: 50%; transform: translateY(-50%); cursor: ew-resize; }
+
+.crop-handle.t:hover, .crop-handle.t:active { transform: translateX(-50%) scale(1.2); }
+.crop-handle.b:hover, .crop-handle.b:active { transform: translateX(-50%) scale(1.2); }
+.crop-handle.l:hover, .crop-handle.l:active { transform: translateY(-50%) scale(1.2); }
+.crop-handle.r:hover, .crop-handle.r:active { transform: translateY(-50%) scale(1.2); }
+
+/* Center drag indicator */
+.crop-center-indicator {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: rgba(37, 99, 235, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  opacity: 0.6;
+}
+
+/* Subtle crosshairs inside crop box */
+.crop-box::before {
+  content: '';
+  position: absolute;
+  top: 33.33%;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.25);
+  pointer-events: none;
+}
+
+.crop-box::after {
+  content: '';
+  position: absolute;
+  top: 66.66%;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.25);
+  pointer-events: none;
+}
+
+/* Smooth range slider styling */
+input[type=range] {
+  accent-color: #4f46e5;
+}
+
+/* Custom animations */
+@keyframes pulse-subtle {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.92; transform: scale(1.02); }
+}
+
+.pulse-demo {
+  animation: pulse-subtle 2.5s infinite ease-in-out;
+}
+
+/* Prevent image ghost dragging */
+img {
+  -webkit-user-drag: none;
+  user-drag: none;
+}
+
