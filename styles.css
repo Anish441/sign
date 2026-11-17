@@ -35,8 +35,15 @@
   user-select: none;
   -webkit-user-select: none;
   touch-action: none;
-  overflow: hidden;
+  /* No overflow:hidden — the cropBox (child of #canvasContainer, not this) must not clip */
   border-radius: 0.75rem;
+}
+
+/* Canvas container: must be position:relative so cropBox (absolute) is offset from it */
+#canvasContainer {
+  position: relative;
+  display: inline-block;
+  line-height: 0;
 }
 
 /* Crop selection box */

@@ -5,25 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Signature Extractor</title>
   <link rel="icon" type="image/x-icon" href="favicon.ico">
-  <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- Lucide Icons -->
   <script src="https://unpkg.com/lucide@latest"></script>
   <link rel="stylesheet" href="styles.css">
   <script>
     tailwind.config = {
       darkMode: 'class',
-      theme: {
-        extend: {
-          colors: {
-            brand: {
-              500: '#6366f1',
-              600: '#4f46e5',
-              700: '#4338ca',
-            }
-          }
-        }
-      }
+      theme: { extend: { colors: { brand: { 500: '#6366f1', 600: '#4f46e5', 700: '#4338ca' } } } }
     }
   </script>
 </head>
@@ -31,116 +19,95 @@
 
   <!-- Header -->
   <header class="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 sticky top-0 z-40">
-    <div class="max-w-6xl mx-auto px-4 h-14 flex items-center justify-between">
+    <div class="max-w-5xl mx-auto px-4 h-14 flex items-center justify-between">
       <div class="flex items-center space-x-2.5">
         <div class="w-8 h-8 rounded-lg bg-brand-600 flex items-center justify-center text-white shadow-sm">
           <i data-lucide="feather" class="w-4 h-4"></i>
         </div>
         <h1 class="text-base font-bold tracking-tight">Signature Extractor</h1>
       </div>
-
-      <div class="flex items-center space-x-2">
-        <button id="tryExampleBtnTop" class="px-3 py-1.5 text-xs font-semibold rounded-lg bg-indigo-50 text-brand-600 hover:bg-indigo-100 dark:bg-slate-800 dark:text-indigo-400 dark:hover:bg-slate-700 transition">
-          Try Example
-        </button>
-
-        <button id="themeToggleBtn" aria-label="Toggle theme" class="p-2 text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition">
-          <i data-lucide="moon" id="themeIconMoon" class="w-4 h-4 hidden"></i>
-          <i data-lucide="sun" id="themeIconSun" class="w-4 h-4"></i>
-        </button>
-      </div>
+      <button id="themeToggleBtn" aria-label="Toggle theme" class="p-2 text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition">
+        <i data-lucide="moon" id="themeIconMoon" class="w-4 h-4 hidden"></i>
+        <i data-lucide="sun" id="themeIconSun" class="w-4 h-4"></i>
+      </button>
     </div>
   </header>
 
-  <!-- Main Container -->
-  <main class="flex-1 max-w-6xl w-full mx-auto p-4 sm:p-6 space-y-4">
+  <main class="flex-1 max-w-5xl w-full mx-auto p-4 sm:p-6 space-y-4">
 
-    <!-- Simple Upload Screen (Initial state) -->
-    <div id="uploadSection" class="transition-all duration-200">
-      <div id="dropZone" class="bg-white dark:bg-slate-900 rounded-2xl border-2 border-dashed border-slate-300 dark:border-slate-800 p-8 sm:p-12 text-center flex flex-col items-center justify-center gap-5 shadow-xs">
-        
-        <div class="w-12 h-12 rounded-xl bg-indigo-50 dark:bg-slate-800 text-brand-600 dark:text-indigo-400 flex items-center justify-center">
-          <i data-lucide="image" class="w-6 h-6"></i>
+    <!-- Upload Screen -->
+    <div id="uploadSection">
+      <div id="dropZone" class="bg-white dark:bg-slate-900 rounded-2xl border-2 border-dashed border-slate-300 dark:border-slate-700 p-10 sm:p-16 text-center flex flex-col items-center gap-6 shadow-sm cursor-pointer hover:border-brand-500 transition-colors">
+        <div class="w-16 h-16 rounded-2xl bg-indigo-50 dark:bg-slate-800 text-brand-600 dark:text-indigo-400 flex items-center justify-center">
+          <i data-lucide="pen-line" class="w-8 h-8"></i>
         </div>
-
+        <div>
+          <p class="text-lg font-semibold text-slate-700 dark:text-slate-200">Upload signature photo</p>
+          <p class="text-sm text-slate-400 mt-1">Take a photo of paper or upload — the signature will be extracted automatically</p>
+        </div>
         <div class="flex flex-wrap items-center justify-center gap-3">
-          <!-- Mobile / Native Camera -->
+          <!-- Mobile Camera -->
           <label for="cameraInput" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white font-semibold text-sm shadow-sm transition cursor-pointer active:scale-95">
             <i data-lucide="camera" class="w-4 h-4"></i>
             <span>Take Photo</span>
           </label>
           <input type="file" id="cameraInput" accept="image/*" capture="environment" class="hidden">
 
-          <!-- Webcam for Laptops -->
+          <!-- Webcam (desktop) -->
           <button id="webcamModalBtn" class="hidden sm:inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-semibold text-sm transition active:scale-95">
             <i data-lucide="video" class="w-4 h-4 text-brand-600"></i>
             <span>Webcam</span>
           </button>
 
-          <!-- Upload Image -->
+          <!-- Upload -->
           <label for="fileInput" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-semibold text-sm transition cursor-pointer active:scale-95">
             <i data-lucide="upload" class="w-4 h-4"></i>
-            <span>Upload Photo</span>
+            <span>Upload Image</span>
           </label>
           <input type="file" id="fileInput" accept="image/*" class="hidden">
-
-          <!-- Example Card Button -->
-          <button id="tryExampleCardBtn" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-700 dark:text-amber-300 font-semibold text-sm border border-amber-300/40 dark:border-amber-700/40 transition active:scale-95">
-            <i data-lucide="sparkles" class="w-4 h-4 text-amber-500"></i>
-            <span>Try Example ID</span>
-          </button>
         </div>
-
-        <p class="text-xs text-slate-400">
-          Drop photo here, or paste from clipboard (Ctrl+V)
-        </p>
+        <p class="text-xs text-slate-400">or drop / paste (Ctrl+V) an image here</p>
       </div>
     </div>
 
-    <!-- Workspace Screen (When image is loaded) -->
+    <!-- Workspace -->
     <div id="workspaceSection" class="hidden space-y-4">
-      
-      <!-- Action Toolbar -->
-      <div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 px-4 py-2.5 shadow-xs flex items-center justify-between">
-        <div class="flex items-center gap-2">
-          <button id="autoDetectBtn" class="px-3 py-1.5 text-xs font-semibold rounded-lg bg-brand-600 hover:bg-brand-700 text-white flex items-center gap-1.5 transition">
-            <i data-lucide="wand-2" class="w-3.5 h-3.5"></i>
-            <span>Auto-Detect</span>
-          </button>
 
-          <button id="resetCropBtn" class="px-3 py-1.5 text-xs font-medium rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 transition">
-            Reset Box
-          </button>
-        </div>
-
+      <!-- Toolbar -->
+      <div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 px-4 py-2.5 shadow-sm flex items-center justify-between flex-wrap gap-2">
         <div class="flex items-center gap-2">
-          <button id="rotateCCWBtn" title="Rotate" class="p-1.5 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition">
+          <button id="rotateCCWBtn" title="Rotate left" class="p-2 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition">
             <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
           </button>
-          <button id="rotateCWBtn" title="Rotate" class="p-1.5 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition">
+          <button id="rotateCWBtn" title="Rotate right" class="p-2 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition">
             <i data-lucide="rotate-cw" class="w-4 h-4"></i>
           </button>
-          <button id="uploadNewBtn" class="ml-2 px-3 py-1.5 text-xs font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-lg transition">
-            Change Photo
-          </button>
+          <span class="text-xs text-slate-400 pl-1">Adjust if crooked</span>
         </div>
+        <button id="uploadNewBtn" class="px-3 py-1.5 text-xs font-medium text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-lg transition">
+          Change Photo
+        </button>
       </div>
 
       <!-- Main Columns -->
-      <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
-        
-        <!-- Left: Image Canvas with Interactive Crop Box -->
-        <div class="lg:col-span-6 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-3 shadow-xs space-y-2">
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
+
+        <!-- Left: Image with crop box -->
+        <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-3 shadow-sm space-y-2">
           <div class="flex items-center justify-between px-1">
-            <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">ID Card</span>
-            <span id="cropDimBadge" class="text-xs text-slate-400 font-mono">-- × -- px</span>
+            <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Photo</span>
+            <div class="flex items-center gap-2">
+              <span id="cropDimBadge" class="text-xs text-slate-400 font-mono"></span>
+              <button id="autoDetectBtn" class="px-2.5 py-1 text-xs font-semibold rounded-lg bg-brand-600 hover:bg-brand-700 text-white flex items-center gap-1 transition">
+                <i data-lucide="wand-2" class="w-3 h-3"></i>
+                <span>Auto</span>
+              </button>
+            </div>
           </div>
 
-          <div id="cropWrapper" class="crop-container w-full bg-slate-950 flex items-center justify-center p-2 rounded-xl overflow-hidden min-h-[340px]">
-            <!-- Inner Canvas Container (Exactly matches canvas pixel dimensions) -->
+          <div id="cropWrapper" class="crop-container w-full bg-slate-950 flex items-center justify-center p-2 rounded-xl overflow-hidden min-h-[300px]">
             <div id="canvasContainer" class="relative inline-block select-none">
               <canvas id="cardCanvas" class="block select-none pointer-events-none"></canvas>
-              
               <!-- Draggable Crop Box -->
               <div id="cropBox" class="crop-box">
                 <div class="crop-handle tl" data-handle="tl"></div>
@@ -157,134 +124,112 @@
               </div>
             </div>
           </div>
+          <p class="text-xs text-slate-400 text-center">Drag the box to select the signature area</p>
         </div>
 
-        <!-- Right: Signature Output & Download -->
-        <div class="lg:col-span-6 space-y-4">
-          
-          <!-- Extracted Signature Card -->
-          <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-4 shadow-xs space-y-3">
+        <!-- Right: Output -->
+        <div class="space-y-4">
+
+          <!-- Preview -->
+          <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-4 shadow-sm space-y-3">
             <div class="flex items-center justify-between">
               <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Extracted Signature</span>
-              
-              <!-- Background Toggle -->
-              <div class="flex items-center bg-slate-100 dark:bg-slate-800 rounded-lg p-0.5">
-                <button id="bgCheckerBtn" title="Checkerboard" class="p-1 rounded text-xs bg-white dark:bg-slate-700 text-slate-800 dark:text-white shadow-xs">
+              <div class="flex items-center bg-slate-100 dark:bg-slate-800 rounded-lg p-0.5 gap-0.5">
+                <button id="bgCheckerBtn" title="Transparent" class="p-1.5 rounded text-xs bg-white dark:bg-slate-700 shadow-sm">
                   <i data-lucide="grid" class="w-3.5 h-3.5"></i>
                 </button>
-                <button id="bgWhiteBtn" title="White" class="p-1 rounded text-xs text-slate-500 hover:text-slate-800 dark:hover:text-white">
+                <button id="bgWhiteBtn" title="White" class="p-1.5 rounded text-xs text-slate-400">
                   <i data-lucide="square" class="w-3.5 h-3.5"></i>
                 </button>
-                <button id="bgDarkBtn" title="Dark" class="p-1 rounded text-xs text-slate-500 hover:text-slate-800 dark:hover:text-white">
+                <button id="bgDarkBtn" title="Dark" class="p-1.5 rounded text-xs text-slate-400">
                   <i data-lucide="circle" class="w-3.5 h-3.5"></i>
                 </button>
               </div>
             </div>
 
-            <!-- Preview Box -->
-            <div id="previewContainer" class="checker-bg w-full h-36 rounded-xl border border-slate-200 dark:border-slate-800 flex items-center justify-center p-3 relative overflow-hidden transition-colors">
-              <img id="signaturePreviewImg" alt="Extracted Signature" class="max-w-full max-h-full object-contain filter drop-shadow-xs">
+            <div id="previewContainer" class="checker-bg w-full h-40 rounded-xl border border-slate-200 dark:border-slate-800 flex items-center justify-center p-4 overflow-hidden transition-colors">
+              <img id="signaturePreviewImg" alt="Extracted Signature" class="max-w-full max-h-full object-contain drop-shadow-sm">
             </div>
 
             <div class="flex items-center justify-between text-xs text-slate-400 px-1">
-              <span id="sigResolutionLabel" class="font-mono">--</span>
-              <span class="text-emerald-500 font-medium">Transparent PNG Ready</span>
+              <span id="sigResolutionLabel" class="font-mono"></span>
+              <span class="text-emerald-500 font-medium">Transparent PNG</span>
             </div>
 
-            <!-- Download Buttons -->
-            <div class="space-y-2 pt-1">
-              <button id="downloadPngBtn" class="w-full inline-flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-brand-600 hover:bg-brand-700 text-white font-semibold text-sm shadow-sm transition active:scale-[0.98]">
-                <i data-lucide="download" class="w-4 h-4"></i>
-                <span>Download Transparent PNG</span>
-              </button>
-
-              <div class="grid grid-cols-3 gap-2">
-                <button id="downloadJpgBtn" class="py-2 px-2 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-medium transition">
-                  White JPG
-                </button>
-                <button id="downloadSvgBtn" class="py-2 px-2 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-medium transition">
-                  SVG Vector
-                </button>
-                <button id="copyClipboardBtn" class="py-2 px-2 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-medium transition">
-                  Copy
-                </button>
-              </div>
+            <!-- Downloads -->
+            <button id="downloadPngBtn" class="w-full inline-flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-brand-600 hover:bg-brand-700 text-white font-semibold text-sm shadow-sm transition active:scale-[0.98]">
+              <i data-lucide="download" class="w-4 h-4"></i>
+              Download Transparent PNG
+            </button>
+            <div class="grid grid-cols-3 gap-2">
+              <button id="downloadJpgBtn" class="py-2 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-medium transition">White JPG</button>
+              <button id="downloadSvgBtn" class="py-2 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-medium transition">SVG</button>
+              <button id="copyClipboardBtn" class="py-2 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-medium transition">Copy</button>
             </div>
           </div>
 
-          <!-- Quick Adjustments -->
-          <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-4 shadow-xs space-y-3">
+          <!-- Fine-tune -->
+          <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-4 shadow-sm space-y-3">
             <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider block">Fine-Tune</span>
 
-            <!-- Boldness -->
             <div class="space-y-1">
               <div class="flex justify-between text-xs">
-                <span class="text-slate-600 dark:text-slate-300">Ink Boldness</span>
-                <span id="thresholdVal" class="font-mono text-slate-400">24</span>
+                <span class="text-slate-600 dark:text-slate-300">Ink Sensitivity</span>
+                <span id="thresholdVal" class="font-mono text-slate-400">28</span>
               </div>
-              <input type="range" id="thresholdSlider" min="5" max="80" value="24" class="w-full h-1.5 bg-slate-200 dark:bg-slate-700 rounded-lg cursor-pointer">
+              <input type="range" id="thresholdSlider" min="5" max="80" value="28" class="w-full h-1.5 rounded-lg cursor-pointer">
             </div>
 
-            <!-- Cleanliness -->
             <div class="space-y-1">
               <div class="flex justify-between text-xs">
-                <span class="text-slate-600 dark:text-slate-300">Background Cleanliness</span>
-                <span id="cleanlinessVal" class="font-mono text-slate-400">18</span>
+                <span class="text-slate-600 dark:text-slate-300">Background Clean</span>
+                <span id="cleanlinessVal" class="font-mono text-slate-400">15</span>
               </div>
-              <input type="range" id="cleanlinessSlider" min="2" max="60" value="18" class="w-full h-1.5 bg-slate-200 dark:bg-slate-700 rounded-lg cursor-pointer">
+              <input type="range" id="cleanlinessSlider" min="2" max="60" value="15" class="w-full h-1.5 rounded-lg cursor-pointer">
             </div>
 
-            <!-- Color selection -->
             <div class="flex items-center justify-between pt-1 border-t border-slate-100 dark:border-slate-800">
-              <span class="text-xs text-slate-600 dark:text-slate-300">Ink Color</span>
+              <span class="text-xs text-slate-600 dark:text-slate-300">Output Color</span>
               <div class="flex items-center gap-2">
-                <button data-color="#0b0f19" class="color-btn w-6 h-6 rounded-full bg-[#0b0f19] border-2 border-brand-500 shadow-xs flex items-center justify-center transition" title="Black"></button>
-                <button data-color="#0f2b5c" class="color-btn w-6 h-6 rounded-full bg-[#0f2b5c] border-2 border-transparent hover:border-slate-400 shadow-xs flex items-center justify-center transition" title="Navy"></button>
-                <button data-color="#1d4ed8" class="color-btn w-6 h-6 rounded-full bg-[#1d4ed8] border-2 border-transparent hover:border-slate-400 shadow-xs flex items-center justify-center transition" title="Blue"></button>
+                <button data-color="#0b0f19" class="color-btn w-6 h-6 rounded-full bg-[#0b0f19] border-2 border-brand-500 shadow-sm transition" title="Black"></button>
+                <button data-color="#0f2b5c" class="color-btn w-6 h-6 rounded-full bg-[#0f2b5c] border-2 border-transparent hover:border-slate-400 transition" title="Navy"></button>
+                <button data-color="#1d4ed8" class="color-btn w-6 h-6 rounded-full bg-[#1d4ed8] border-2 border-transparent hover:border-slate-400 transition" title="Blue"></button>
                 <button data-color="original" class="color-btn px-2 h-6 rounded text-[11px] font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 transition" title="Original">Orig</button>
               </div>
             </div>
           </div>
 
         </div>
-
       </div>
-
     </div>
 
   </main>
 
-  <!-- Laptop Webcam Modal -->
-  <div id="webcamModal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-xs hidden items-center justify-center p-4">
+  <!-- Webcam Modal -->
+  <div id="webcamModal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden items-center justify-center p-4">
     <div class="bg-white dark:bg-slate-900 rounded-2xl max-w-md w-full border border-slate-200 dark:border-slate-800 p-4 shadow-2xl space-y-3">
       <div class="flex items-center justify-between">
-        <h3 class="text-sm font-bold">Capture Photo</h3>
+        <h3 class="text-sm font-bold">Capture via Webcam</h3>
         <button id="closeWebcamBtn" class="text-slate-400 hover:text-slate-600"><i data-lucide="x" class="w-4 h-4"></i></button>
       </div>
-
-      <div class="relative bg-black rounded-xl overflow-hidden aspect-[4/3] flex items-center justify-center">
+      <div class="relative bg-black rounded-xl overflow-hidden aspect-[4/3]">
         <video id="webcamVideo" autoplay playsinline class="w-full h-full object-cover"></video>
       </div>
-
-      <div class="flex justify-end gap-2 pt-1">
+      <div class="flex justify-end gap-2">
         <button id="cancelWebcamBtn" class="px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-600 dark:text-slate-300">Cancel</button>
         <button id="captureWebcamBtn" class="px-4 py-1.5 rounded-lg bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold flex items-center gap-1.5">
-          <i data-lucide="camera" class="w-3.5 h-3.5"></i>
-          <span>Capture</span>
+          <i data-lucide="camera" class="w-3.5 h-3.5"></i> Capture
         </button>
       </div>
     </div>
   </div>
 
-  <!-- Toast Notification -->
+  <!-- Toast -->
   <div id="toast" class="fixed bottom-5 right-5 z-50 transform translate-y-16 opacity-0 transition-all duration-200 flex items-center gap-2 px-3.5 py-2.5 rounded-xl shadow-lg bg-slate-900 text-white dark:bg-white dark:text-slate-900 text-xs font-semibold pointer-events-none">
     <i data-lucide="check" class="w-3.5 h-3.5 text-emerald-400"></i>
-    <span id="toastMsg">Downloaded!</span>
+    <span id="toastMsg">Done!</span>
   </div>
 
-  <!-- Include Example Base64 Data -->
-  <script src="example_data.js"></script>
-  <!-- Application Logic -->
   <script src="app.js"></script>
 </body>
 </html>
